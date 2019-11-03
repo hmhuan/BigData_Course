@@ -1,0 +1,1 @@
+seminar about prediction.io
