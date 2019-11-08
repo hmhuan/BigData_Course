@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
 public class DeIdentifyData {
     static Logger = Logger.getLogger(DeIdentifyData.class.getName());
     
+    //We use columns 2,3,4,5,6,8
     public static Integer[] encryptCol = {2,3,4,5,6,8};
     
     //Create key for encript
@@ -34,21 +35,21 @@ public class DeIdentifyData {
         public void map(Object key, Text value, Context context)
         throws IOException, InterruptedException {
             //value = PatientID,Name,DOB,Phone Number,Email_Address,SSN,Gender,Disease,weight
-            //convert records to string and breaking into word
-            StringTokenizer itr = new StringTokenizer(value.toString(), ",");
+            //convert records to string and breaking line into word
+            StringTokenizer tokenizer = new StringTokenizer(value.toString(), "[|]");
 
-            //Create Arraylist and add encriptCol to list, list=2,3,4,5,6,8 
+            //Create Arraylist and add encriptCol to list, then list=2,3,4,5,6,8 
             List < Integer > list = new ArrayList < Integer > ();
             Collections.addAll(list, encryptCol); 
-            System.out.println("Mapper :: one :" + value);
+            System.out.println("Mapper one " + value);
             
             String newStr = "";
             int counter = 1;
             //iterating through all the words available in that line.
-            while (itr.hasMoreTokens()) {
-                String token = itr.nextToken();
-                System.out.println("token" + token);
-                System.out.println("i=" + counter);
+            while (tokenizer.hasMoreTokens()) {
+                String token = tokenizer.nextToken();
+                System.out.println("token: " + token);
+                System.out.println("count= " + counter);
                 
                 //get the list and token with key_07 and save to variable newStr
                 if (list.contains(counter)) {
@@ -62,7 +63,7 @@ public class DeIdentifyData {
                 }
                 counter = counter + 1;
             }
-            //write newStr to context.
+            
             context.write(NullWritable.get(), new Text(newStr.toString()));
         }
     }
