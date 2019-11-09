@@ -1,28 +1,22 @@
 package com.mr;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
 
 public class CallDataRecord {
-
-	public class CDRConstants {
- 		public static int fromPhoneNumber = 0;
- 		public static int toPhoneNumber = 1;
-		public static int callStartTime = 2;
- 		public static int callEndTime = 3;
- 		public static int STDFlag = 4;
-	}
-	
 	public static class TokenizerMapper extends Mapper<Object, Text, Text, LongWritable> {
  		Text phoneNumber = new Text();
 		LongWritable durationInMinutes = new LongWritable();
@@ -75,13 +69,16 @@ public class CallDataRecord {
 			System.err.println("Usage: stdsubscriber < in>< out>");
 			System.exit(2);
 		}
- 		Job = new Job(conf, "STD Subscribers");
- 		job.setJarByClass(STDSubscribers.class);
+ 		Job job = new Job(conf, "STD Subscribers");
+ 		job.setJarByClass(CallDataRecord.class);
+ 		
  		job.setMapperClass(TokenizerMapper.class);
  		job.setCombinerClass(SumReducer.class);
  		job.setReducerClass(SumReducer.class);
+ 		
  		job.setOutputKeyClass(Text.class);
  		job.setOutputValueClass(LongWritable.class);
+ 		
  		FileInputFormat.addInputPath(job, new Path(args[0]));
  		FileOutputFormat.setOutputPath(job, new Path(args[1]));
  		System.exit(job.waitForCompletion(true) ? 0 : 1);
