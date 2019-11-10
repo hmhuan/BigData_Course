@@ -26,13 +26,16 @@ public class SkippedOnRadioTrack {
 			IntWritable skipped = new IntWritable();
 			String[] parts = value.toString().split("[|]");
 
-			int r = Integer.parseInt(parts[LastFMConstants.RADIO]);
-			int s = Integer.parseInt(parts[LastFMConstants.IS_SKIPPED]);
-			radio.set(r);
-			skipped.set(s);
-			trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
-
+			// nếu dòng đó là valid (đủ 5 part)
 			if (parts.length == 5) {
+				
+				int r = Integer.parseInt(parts[LastFMConstants.RADIO]); // lấy ra giá trị tại Radio
+				int s = Integer.parseInt(parts[LastFMConstants.IS_SKIPPED]); // lấy ra giá trị tại skip
+				radio.set(r);
+				skipped.set(s);
+				trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
+				
+				// nếu cả skip và radio đều là 1
 				if  (r + s == 2)
 					context.write(trackId, new IntWritable(1));
 				else
@@ -54,21 +57,20 @@ public class SkippedOnRadioTrack {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
+	public void run(String[] args) throws Exception {
 		Configuration conf = new Configuration();
 		Job job = new Job(conf, "Number of times skipped on radio per track");
+
 		job.setJarByClass(SkippedOnRadioTrack.class);
 
 		job.setMapperClass(Map.class);
 		job.setReducerClass(Reduce.class);
 
-		job.setOutputKeyClass(IntWritable.class);
-		job.setOutputValueClass(IntWritable.class);
+		job.setOutputKeyClass(IntWritable.class); // thiết lập outputkeyclass là IntWritable
+		job.setOutputValueClass(IntWritable.class); // thiết lập outputvalueclass là IntWritable
 
 		Path outputPath = new Path(args[2]);
 		
-		// String is_on_Radio = args[3];
-
 		FileInputFormat.addInputPath(job, new Path(args[1]));
 		FileOutputFormat.setOutputPath(job, new Path(args[2]));
 

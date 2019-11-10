@@ -14,7 +14,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 
-public class SkippedOnRadioTrack {
+public class ListenedTotalTrack {
 	private enum COUNTERS {
 		INVALID_RECORD_COUNT
 	}
@@ -22,21 +22,16 @@ public class SkippedOnRadioTrack {
 	public static class Map extends Mapper<Object, Text, IntWritable, IntWritable> {
 		public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 			IntWritable trackId = new IntWritable();
-			IntWritable radio = new IntWritable();
-			IntWritable skipped = new IntWritable();
+			IntWritable unskipped = new IntWritable();
+			
 			String[] parts = value.toString().split("[|]");
-
-			int r = Integer.parseInt(parts[LastFMConstants.RADIO]);
-			int s = Integer.parseInt(parts[LastFMConstants.IS_SKIPPED]);
-			radio.set(r);
-			skipped.set(s);
-			trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
-
+			
 			if (parts.length == 5) {
-				if  (r + s == 2)
-					context.write(trackId, new IntWritable(1));
-				else
-					context.write(trackId, new IntWritable(0));
+				// lấy giá trị unskip = 1 - skip
+				unskipped.set(1 - Integer.parseInt(parts[LastFMConstants.IS_SKIPPED]));
+				// lấy giá trị trackId 
+				trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
+				context.write(trackId, unskipped);
 			} else {
 				context.getCounter(COUNTERS.INVALID_RECORD_COUNT).increment(1L);
 			}
@@ -56,9 +51,8 @@ public class SkippedOnRadioTrack {
 
 	public void run(String[] args) throws Exception {
 		Configuration conf = new Configuration();
-		Job job = new Job(conf, "Number of times skipped on radio per track");
-
-		job.setJarByClass(SkippedOnRadioTrack.class);
+		Job job = new Job(conf, "Number of times listened per track in total"); // mean: does not been skipped
+		job.setJarByClass(ListenedTotalTrack.class);
 
 		job.setMapperClass(Map.class);
 		job.setReducerClass(Reduce.class);
@@ -68,7 +62,6 @@ public class SkippedOnRadioTrack {
 
 		Path outputPath = new Path(args[2]);
 		
-		// String is_on_Radio = args[3];
 
 		FileInputFormat.addInputPath(job, new Path(args[1]));
 		FileOutputFormat.setOutputPath(job, new Path(args[2]));

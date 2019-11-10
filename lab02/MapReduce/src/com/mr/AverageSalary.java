@@ -11,12 +11,21 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
 public class AverageSalary {
 	public static class  Map extends Mapper<Object, Text, Text, FloatWritable>{
-		public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
+		public void map(Object key, Text value, Context context) 
+		throws IOException, InterruptedException
+		{
 			String values[] = value.toString().split(",");
 			Text name = new Text((values[1] + values[0]));
-			FloatWritable salary = new FloatWritable(Float.parseFloat(values[7]));
+			FloatWritable salary = new FloatWritable();
+			if (values[5].contentEquals("Salary")) {
+				salary.set(Float.parseFloat(values[7])); // giá trị lương
+			} else {
+				salary.set(Float.parseFloat(values[6]) * Float.parseFloat(values[8]) * 4); 
+				// giá trị lương tính theo = typicals hours * hourly salary * 4
+			}
 			context.write(name, salary);
 		}
 	}
@@ -39,13 +48,16 @@ public class AverageSalary {
 	public static void main(String[] args) throws Exception{
 		Configuration conf = new Configuration();
 		
-		Job job = new Job(conf, "AverSal");
+		Job job = new Job(conf, "Average Salary");
 		
 		job.setJarByClass(AverageSalary.class);
 		
 		job.setMapperClass(Map.class);
 		job.setCombinerClass(Reduce.class);
 		job.setReducerClass(Reduce.class);
+	
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(FloatWritable.class);
 		
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(FloatWritable.class);
@@ -53,10 +65,10 @@ public class AverageSalary {
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 		
-		Path outputPath = new Path(args[2]);
+		Path outputPath = new Path(args[1]);
 		
-		FileInputFormat.addInputPath(job, new Path(args[1])); //change here
-        FileOutputFormat.setOutputPath(job, new Path(args[2])); //change here
+		FileInputFormat.addInputPath(job, new Path(args[0])); 
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
         
         outputPath.getFileSystem(conf).delete(outputPath);
         

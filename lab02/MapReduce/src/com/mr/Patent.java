@@ -10,7 +10,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -33,7 +32,7 @@ public class Patent {
 		}
 	}
 
-	public static class Reduce extends Reducer<Text, Text, Text, LongWritable> {
+	public static class Reduce extends Reducer<Text, Text, Text, IntWritable> {
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			int sum = 0;
 			
@@ -41,7 +40,7 @@ public class Patent {
 			{
 				sum++;
 			}
-			context.write(key, new LongWritable(sum));
+			context.write(key, new IntWritable(sum));
 		}
 	}
 	
@@ -59,15 +58,15 @@ public class Patent {
 		job.setMapOutputValueClass(Text.class);
 		
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(LongWritable.class);
+		job.setOutputValueClass(IntWritable.class);
 		
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 		
-		Path outputPath = new Path(args[2]);
+		Path outputPath = new Path(args[1]);
 		
-		FileInputFormat.addInputPath(job, new Path(args[1])); //change here
-        FileOutputFormat.setOutputPath(job, new Path(args[2])); //change here
+		FileInputFormat.addInputPath(job, new Path(args[0])); //change here
+        FileOutputFormat.setOutputPath(job, new Path(args[1])); //change here
         
         //deleting the output path automatically from hdfs so that we don't have delete it explicitly
         outputPath.getFileSystem(conf).delete(outputPath);

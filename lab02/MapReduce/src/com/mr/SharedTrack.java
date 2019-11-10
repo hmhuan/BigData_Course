@@ -27,10 +27,11 @@ public class SharedTrack {
 			
 			String[] parts = value.toString().split("[|]");
 			
-			share.set(Integer.parseInt(parts[LastFMConstants.IS_SHARED]));
-			trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
-			
 			if (parts.length == 5) {
+				// Lấy giá trị shared
+				share.set(Integer.parseInt(parts[LastFMConstants.IS_SHARED]));
+				// lấy giá trị trackId
+				trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
 				context.write(trackId, share);
 			} else {
 				context.getCounter(COUNTERS.INVALID_RECORD_COUNT).increment(1L);
@@ -50,7 +51,7 @@ public class SharedTrack {
 		}
 	}
 	
-	public static void main(String[] args) throws Exception{
+	public void run(String[] args) throws Exception{
 		Configuration conf = new Configuration();
 		Job job = new Job(conf, "Times shared per track");
 		job.setJarByClass(SharedTrack.class);

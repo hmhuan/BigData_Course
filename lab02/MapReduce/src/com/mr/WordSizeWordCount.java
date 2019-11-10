@@ -15,40 +15,34 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class WordSizeWordCount {
-	public static class Map extends Mapper<LongWritable, Text, IntWritable, Text>{
-        private static IntWritable count;
-        private Text word = new Text();
-        
+	public static class Map extends Mapper<LongWritable, Text, IntWritable, IntWritable>{        
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException
         {
-            // Convert the record (single line) to String and storing it in a String variable line 
-            String line = value.toString(); 
+            String line = value.toString(); // Lưu record vào biến string line
             
-            // StringTokenizer is break the line into words
-            StringTokenizer tokenizer = new StringTokenizer(line);
+            // StringTokenizer đưa chuỗi về các từ đơn (token)
+            StringTokenizer tokenizer = new StringTokenizer(line); 
             
-            // iterating through all the words available in that line and forming the key-value pair
+            // Lặp với các từ vừa tokenized ở record đó và write dạng <key, value>
             while (tokenizer.hasMoreTokens())
             {
                 String token = tokenizer.nextToken();
                 
-                // finding the length of each token(word)
-                count = new IntWritable(token.length());
-                word.set(token);
-                
-                //Sending to output collector which in turn passes the same to reducer
-                //So in this case the output from mapper will be the length of a word and that word
-                context.write(count, word);
+                // biến word lưu giá trị độ dài của từ
+                IntWritable word = new IntWritable(token.length());
+                IntWritable one = new IntWritable(1);
+                // context ghi ra key - độ dài từ, value - 1
+                context.write(word, one);
             }
         }
     }
-    public static class Reduce extends Reducer<IntWritable, Text, IntWritable, IntWritable>{
+    public static class Reduce extends Reducer<IntWritable, IntWritable, IntWritable, IntWritable>{
         	
-        public void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException
+        public void reduce(IntWritable key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException
         {
             int sum = 0;
-            for (Text x: values){
-                sum++;
+            for (IntWritable x: values){
+                sum += x.get();
             }
             context.write(key, new IntWritable(sum));
         }
@@ -56,14 +50,15 @@ public class WordSizeWordCount {
 	public static void main(String[] args) throws Exception 
     {
         Configuration conf = new Configuration();
-        Job job = new Job(conf,"WordSize");
+        Job job = new Job(conf,"Word Count Word Size");
         job.setJarByClass(WordSizeWordCount.class);
     
         job.setMapperClass(Map.class);
+        job.setCombinerClass(Reduce.class);
         job.setReducerClass(Reduce.class);
         
         job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(Text.class);
+        job.setMapOutputValueClass(IntWritable.class);
         
         job.setOutputKeyClass(IntWritable.class);
         job.setOutputValueClass(IntWritable.class);
@@ -71,10 +66,10 @@ public class WordSizeWordCount {
         job.setInputFormatClass(TextInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
         
-        Path outputPath = new Path(args[2]);
+        Path outputPath = new Path(args[1]);
         
-        FileInputFormat.addInputPath(job, new Path(args[1])); //change here
-        FileOutputFormat.setOutputPath(job, new Path(args[2])); //change here
+        FileInputFormat.addInputPath(job, new Path(args[0])); 
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
         
         outputPath.getFileSystem(conf).delete(outputPath);
         

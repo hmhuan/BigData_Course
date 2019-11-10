@@ -16,16 +16,19 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class MaxTemp {
 	public static class Map extends Mapper<LongWritable, Text, Text, IntWritable>{
-		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException{
+		public void map(LongWritable key, Text value, Context context) 
+		throws IOException, InterruptedException
+		{
 			String line = value.toString();
-			
+			// tách token từ record
 			StringTokenizer tokenizer = new StringTokenizer(line, " ");
 			
 			while(tokenizer.hasMoreTokens()) {
+				// year là token đầu tiên
 				String year = tokenizer.nextToken();
-				
+				// temperature là token tiếp theo
 				int temperature = Integer.parseInt(tokenizer.nextToken().trim());
-				
+				// ghi ra cặp <year, temperature>
 				context.write(new Text(year), new IntWritable(temperature));
 			}
 		}
@@ -46,7 +49,7 @@ public class MaxTemp {
 	public static void main(String[] args) throws Exception{
 		Configuration conf = new Configuration();
 		
-		Job job = new Job(conf, "MaxTemp");
+		Job job = new Job(conf, "Maximum temperature in year");
 		
 		job.setJarByClass(MaxTemp.class);
 		
@@ -63,10 +66,10 @@ public class MaxTemp {
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 		
-		Path outputPath = new Path(args[2]);
+		Path outputPath = new Path(args[1]);
 		
-		FileInputFormat.addInputPath(job, new Path(args[1])); //change here
-        FileOutputFormat.setOutputPath(job, new Path(args[2])); //change here
+		FileInputFormat.addInputPath(job, new Path(args[0])); //change here
+        FileOutputFormat.setOutputPath(job, new Path(args[1])); //change here
         
         outputPath.getFileSystem(conf).delete(outputPath);
         

@@ -25,12 +25,15 @@ public class UniqueListener {
 		IntWritable trackId = new IntWritable();
 		IntWritable userId = new IntWritable();
 
-		public void map(Object key, Text value, Mapper<Object, Text, IntWritable, IntWritable>.Context context)
+		public void map(Object key, Text value, Context context)
 				throws IOException, InterruptedException {
 			String[] parts = value.toString().split("[|]");
-			userId.set(Integer.parseInt(parts[LastFMConstants.USER_ID]));
-			trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
+			
 			if (parts.length == 5) {
+				// lấy userId
+				userId.set(Integer.parseInt(parts[LastFMConstants.USER_ID]));
+				// lấy trackId
+				trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
 				context.write(trackId, userId);
 			} else {
 				// add counter for invalid records
@@ -40,26 +43,24 @@ public class UniqueListener {
 	}
 
 	public static class UniqueListenerReducer extends Reducer<IntWritable, IntWritable, IntWritable, IntWritable> {
-		public void reduce(IntWritable trackId, Iterable<IntWritable> userIds,
-				Reducer<IntWritable, IntWritable, IntWritable, IntWritable>.Context context)
+		public void reduce(IntWritable trackId, Iterable<IntWritable> userIds, Context context)
 				throws IOException, InterruptedException {
 			Set<Integer> userIdSet = new HashSet<Integer>();
+			// với mỗi trackId, bỏ vào set các userId tương ứng (set sẽ loại phần tử trùng)
 			for (IntWritable userId : userIds) {
 				userIdSet.add(userId.get());
 			}
 			IntWritable size = new IntWritable(userIdSet.size());
-			context.write(trackId, size);
+			context.write(trackId, size); //ghi ra trackId, số lượng unique userId track đó.
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
+	public void run(String[] args) throws Exception {
 		Configuration conf = new Configuration();
-		if (args.length != 3) {
-			System.err.println("Usage: uniquelisteners < in >< out >");
-			System.exit(2);
-		}
+		
 		Job job = new Job(conf, "Unique Listeners per track");
 		job.setJarByClass(UniqueListener.class);
+		
 		job.setMapperClass(UniqueListenerMapper.class);
 		job.setReducerClass(UniqueListenerReducer.class);
 		job.setOutputKeyClass(IntWritable.class);

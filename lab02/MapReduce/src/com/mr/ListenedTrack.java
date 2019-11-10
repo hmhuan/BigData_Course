@@ -25,11 +25,11 @@ public class ListenedTrack {
 			IntWritable radio = new IntWritable();
 
 			String[] parts = value.toString().split("[|]");
-
-			radio.set(Integer.parseInt(parts[LastFMConstants.RADIO]));
-			trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
-
 			if (parts.length == 5) {
+				// Lấy giá trị radio
+				radio.set(Integer.parseInt(parts[LastFMConstants.RADIO]));
+				// Lấy giá trị trackId
+				trackId.set(Integer.parseInt(parts[LastFMConstants.TRACK_ID]));
 				context.write(trackId, radio);
 			} else {
 				context.getCounter(COUNTERS.INVALID_RECORD_COUNT).increment(1L);
@@ -48,9 +48,9 @@ public class ListenedTrack {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
+	public void run(String[] args) throws Exception {
 		Configuration conf = new Configuration();
-		Job job = new Job(conf, "Number of times listened per track");
+		Job job = new Job(conf, "Number of times listened per track in Radio");
 		job.setJarByClass(ListenedTrack.class);
 
 		job.setMapperClass(Map.class);

@@ -20,26 +20,26 @@ public class CallDataRecord {
 	public static class TokenizerMapper extends Mapper<Object, Text, Text, LongWritable> {
 		// Call phone number
  		Text phoneNumber = new Text();
-		// Duration of call
-		LongWritable durationInMinutes = new LongWritable();
+ 		// Duration of call
+ 		LongWritable durationInMinutes = new LongWritable();
 		
- 		public void map(Object key, Text value, Mapper<Object, Text, Text, LongWritable>.Context context)
+ 		public void map(Object key, Text value, Context context)
  			throws IOException, InterruptedException {
-			// Split a line of call log to to 5 strings by `|`
+ 			// Split a line of call log to to 5 strings by `|`
  			String[] parts = value.toString().split("[|]");
-			// In case the call is STD
+ 			// In case the call is STD
  			if (parts[CDRConstants.STDFlag].equalsIgnoreCase("1")) {
-				// Get call phone number from `parts` list
+ 				// Get call phone number from `parts` list
  				phoneNumber.set(parts[CDRConstants.fromPhoneNumber]);
-				// Get call end time from `parts` list
+ 				// Get call end time from `parts` list
  				String callEndTime = parts[CDRConstants.callEndTime];
-				// Get call start time from `parts` list
+ 				// Get call start time from `parts` list
  				String callStartTime = parts[CDRConstants.callStartTime];
-				// Compute duration in millisecond
+ 				// Compute duration in millisecond
  				long duration = toMillis(callEndTime) - toMillis(callStartTime);
-				// Convert duration to minute unit
+ 				// Convert duration to minute unit
  				durationInMinutes.set(duration / (1000 * 60));
-				// Sending to output collector which in turn passes the same to reducer
+ 				// Sending to output collector which in turn passes the same to reducer
 				// <key, value> : <phoneNumber, durationInMinutes>
 				context.write(phoneNumber, durationInMinutes);
 			}
@@ -50,12 +50,12 @@ public class CallDataRecord {
  			SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss");
  			Date dateFrm = null;
  			try {
-				// Parse a datatime string with format defined as above
+ 				// Parse a datatime string with format defined as above
  				dateFrm = format.parse(date);
  			} catch (ParseException e) {
 				e.printStackTrace();
  			}
-			// Returns the number of milliseconds since January 1, 1970, 00:00:00 GTM
+ 			// Returns the number of milliseconds since January 1, 1970, 00:00:00 GTM
 			return dateFrm.getTime();
  		}
  	}
@@ -63,7 +63,7 @@ public class CallDataRecord {
 	public static class SumReducer extends Reducer<Text, LongWritable, Text, LongWritable> {
 		private LongWritable result = new LongWritable();
 
-		public void reduce(Text key, Iterable<LongWritable> values, Reducer<Text, LongWritable, Text, LongWritable>.Context context)
+		public void reduce(Text key, Iterable<LongWritable> values,Context context)
 			throws IOException, InterruptedException {
 			// Sum of the duration a phone number made
 			long sum = 0;
@@ -83,15 +83,18 @@ public class CallDataRecord {
  		throws Exception {
  		Configuration conf = new Configuration();
 		if (args.length != 2) {
-			System.err.println("Usage: stdsubscriber < in>< out>");
+			System.err.println("Usage: CDR < in>< out>");
 			System.exit(2);
 		}
- 		Job job = new Job(conf, "STD Subscribers");
+ 		Job job = new Job(conf, "Call Data Record");
  		job.setJarByClass(CallDataRecord.class);
  		
  		job.setMapperClass(TokenizerMapper.class);
  		job.setCombinerClass(SumReducer.class);
  		job.setReducerClass(SumReducer.class);
+ 		
+ 		job.setMapOutputKeyClass(Text.class);
+ 		job.setMapOutputValueClass(LongWritable.class);
  		
  		job.setOutputKeyClass(Text.class);
  		job.setOutputValueClass(LongWritable.class);
